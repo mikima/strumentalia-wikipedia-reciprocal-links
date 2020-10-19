@@ -25,9 +25,18 @@
 
     <script src="script.js"></script>
     <h1>Get Reciprocal links of wikipedia pages</h1>
+    <label for="input urls">Starting wikipedia pages (one per line):</label
+    ><br />
     <textarea id="inputlist" name="input urls" rows="4" cols="100">
-https://en.wikipedia.org/wiki/Compasso_d%27Oro
+https://en.wikipedia.org/wiki/Compasso%20d%27Oro
   </textarea
+    >
+    <label for="stopword list"
+      >Stopwords list (won't be crawled) separted by comma:</label
+    ><br />
+    <textarea id="stopwordlist" name="stopword list" rows="4" cols="100">
+Italy, Milan, Köppen climate classification
+</textarea
     >
     <br />
     <input type="text" id="degrees" name="degrees" value="2" />

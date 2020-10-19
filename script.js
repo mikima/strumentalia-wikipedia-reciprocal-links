@@ -7,12 +7,22 @@ let nodes = [];
 let edges = [];
 // maximum depth
 let maxDepth = 1;
-let stoplist = new Set(["Italy"]);
+let stoplist = new Set(["Italy", "Milan"]);
 let maxBacklins = 5000 / 500;
 
 window.onload = function () {
   $("input#submit").click(async function () {
     let strings = $("textarea#inputlist").val().split("\n");
+    stoplist = new Set(
+      $("textarea#stopwordlist")
+        .val()
+        .split(",")
+        .map((s) => s.trim())
+    );
+
+    maxDepth = +$("input#degrees").val();
+    console.log("max depth", maxDepth);
+    console.log("stopwords", stoplist);
     //send to server and process response
     strings.forEach((line) => {
       let input = checkURL(line);
@@ -82,7 +92,6 @@ window.onload = function () {
       }
       //add the item to the done array
       done.add(item.title);
-      console.log("network:", nodes, edges);
       console.log(queue.length, "items in queue");
     }
     // the queue is over, export results
@@ -104,13 +113,14 @@ window.onload = function () {
     g.nodes = nodes.map((d) => ({
       id: d.title,
       label: d.title,
-      data: { distance: d.depth, language: d.language },
+      attvalues: { distance: d.depth, language: d.language },
     }));
     g.edges = edges.map((e) => ({
       source: e.source.title,
       target: e.target.title,
       weight: e.weight,
     }));
+    createGEXF(g.nodes, g.edges);
   });
 };
 
@@ -121,7 +131,7 @@ function checkURL(_url) {
     return { text: _url, error: true };
   } else {
     return {
-      title: decodeURIComponent(check[2]),
+      title: decodeURIComponent(check[2]).replace("_", " "),
       language: check[1],
       depth: 0,
     };
@@ -228,4 +238,78 @@ function downloadCSV(_array, _name) {
   tempLink.href = csvURL;
   tempLink.setAttribute("download", _name + ".csv");
   tempLink.click();
+}
+
+//a crappy function to write gexf
+
+function createGEXF(_nodes, _edges) {
+  let doc = document.implementation.createDocument("", "", null);
+  let net = doc.createElement("gexf");
+  let graph = doc.createElement("graph");
+  net.appendChild(graph);
+
+  if (_nodes[0].attvalues) {
+    let nodesAttributes = doc.createElement("attributes");
+    nodesAttributes.setAttribute("class", "node");
+    nodesAttributes.setAttribute("mode", "static");
+    graph.appendChild(nodesAttributes);
+    for (attvalueKey in _nodes[0].attvalues) {
+      let attribute = doc.createElement("attribute");
+      attribute.setAttribute("id", attvalueKey);
+      attribute.setAttribute("title", attvalueKey);
+
+      let type = typeof _nodes[0].attvalues[attvalueKey];
+      attribute.setAttribute("type", type == "number" ? "float" : "string");
+      nodesAttributes.appendChild(attribute);
+    }
+  }
+
+  let nodes = doc.createElement("nodes");
+  let edges = doc.createElement("edges");
+
+  graph.appendChild(nodes);
+  graph.appendChild(edges);
+
+  _nodes.forEach((n) => {
+    let newNode = doc.createElement("node");
+    newNode.setAttribute("id", n.id);
+    newNode.setAttribute("label", n.label);
+    nodes.appendChild(newNode);
+
+    // add attvalues
+    //<attvalues>
+    //<attvalue for="indegree" value="0"></attvalue>
+    let nodeAttvalues = doc.createElement("attvalues");
+    newNode.appendChild(nodeAttvalues);
+    if (n.attvalues) {
+      for (attvalueKey in n.attvalues) {
+        let attvalue = doc.createElement("attvalue");
+        attvalue.setAttribute("for", attvalueKey);
+        attvalue.setAttribute("value", n.attvalues[attvalueKey]);
+        nodeAttvalues.appendChild(attvalue);
+      }
+    }
+  });
+  _edges.forEach((e, i) => {
+    let newEdge = doc.createElement("edge");
+    newEdge.setAttribute("id", i);
+    newEdge.setAttribute("source", e.source);
+    newEdge.setAttribute("target", e.target);
+    edges.appendChild(newEdge);
+  });
+  let serializer = new XMLSerializer();
+  let xmlString = serializer.serializeToString(net);
+  console.log(doc);
+  console.log(xmlString);
+  // now download it
+  var a = document.createElement("a");
+  document.body.appendChild(a);
+  a.style = "display: none";
+
+  var data = new Blob([xmlString], { type: "application/xhtml+xml" });
+  var url = window.URL.createObjectURL(data);
+  a.href = url;
+  a.download = "network.gexf";
+  a.click();
+  window.URL.revokeObjectURL(url);
 }
