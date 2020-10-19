@@ -1,3 +1,7 @@
+// todo: check entoty type with wikidata
+// https://w.wiki/heA
+// https://query.wikidata.org/sparql?query=SELECT%20%3Fitem%20%3FitemLabel%20%0AWHERE%20%0A%7B%0A%20%20wd%3AQ490%20wdt%3AP31%20%3Fitem%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22%5BAUTO_LANGUAGE%5D%2Cen%22.%20%7D%0A%7D&format=json
+
 // list of pages to be checked
 let queue = [];
 // list of pages done
@@ -8,7 +12,9 @@ let edges = [];
 // maximum depth
 let maxDepth = 1;
 let stoplist = new Set(["Italy", "Milan"]);
-let maxBacklins = 5000 / 500;
+let maxBacklins = 5000;
+let maxBacklinsPagiantion = maxBacklins / 500;
+let filterHubs = true;
 
 window.onload = function () {
   $("input#submit").click(async function () {
@@ -118,7 +124,6 @@ window.onload = function () {
     g.edges = edges.map((e) => ({
       source: e.source.title,
       target: e.target.title,
-      weight: e.weight,
     }));
     createGEXF(g.nodes, g.edges);
   });
@@ -147,7 +152,8 @@ async function getCommonLinks(_pagename, _language) {
   let backlinks = await getBackLinks(_pagename, _language);
 
   let common = links.filter((value) => backlinks.includes(value));
-  return common;
+  //return filterHubs && backlinks.length == maxBacklins ? [] : common;
+  return filterHubs && common.length > 100 ? [] : common; //@TODO: something better
 }
 
 async function getLinks(_title, _language) {
@@ -203,7 +209,7 @@ async function getBackLinks(_title, _language) {
   let nextPage = true;
   let pageno = 1;
 
-  while (nextPage && pageno < maxBacklins) {
+  while (nextPage && pageno < maxBacklinsPagiantion) {
     if (data.continue) {
       console.log("loading page", pageno, "for", _title);
       // create new url and load it
@@ -246,6 +252,7 @@ function createGEXF(_nodes, _edges) {
   let doc = document.implementation.createDocument("", "", null);
   let net = doc.createElement("gexf");
   let graph = doc.createElement("graph");
+  graph.setAttribute("defaultedgetype", "undirected");
   net.appendChild(graph);
 
   if (_nodes[0].attvalues) {
