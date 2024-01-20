@@ -25,8 +25,13 @@
       integrity="sha512-rKFvwjvE4liWPlFnvH4ZhRDfNZ9FOpdkD/BU5gAIA3VS3vOQrQ5BjKgbO3kxebKhHdHcNUHLqxQYSoxee9UwgA=="
       crossorigin="anonymous"
     ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.4.4/d3.min.js"
+      integrity="sha512-hnFpvCiJ8Fr1lYLqcw6wLgFUOEZ89kWCkO+cEekwcWPIPKyknKV1eZmSSG3UxXfsSuf+z/SgmiYB1zFOg3l2UQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
 
-    <script src="script.js"></script>
     <h1>Get Reciprocal links of wikipedia pages</h1>
     <label for="input urls">Starting wikipedia pages (one per line):</label
     ><br />
@@ -42,10 +47,15 @@ Italy, Milan, Köppen climate classification
 </textarea
     >
     <br />
-    <input type="text" id="degrees" name="degrees" value="2" />
+    <input type="text" id="degrees" name="degrees" value="1" />
     <br />
     <input id="submit" type="submit" value="Submit" />
-    <div id="progress">Progress:</div>
-    <div id="results">Pages</div>
+    <h2>Doing</h2>
+    <div id="doing"></div>
+    <h2>Queue List</h2>
+    <div id="queue"></div>
+    <h2>Done List</h2>
+    <div id="done"></div>
   </body>
+  <script src="script.js"></script>
 </html>

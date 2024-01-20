@@ -17,6 +17,29 @@ let maxBacklinsPagiantion = maxBacklins / 500;
 let filterHubs = true;
 
 window.onload = function () {
+  let enterFunction = function (_enter) {
+    _enter
+      .append("div")
+      .text((d) => d.title)
+      .style("color", "blue");
+  };
+
+  let updateFunction = function (_update) {
+    _update.style("color", "green");
+  };
+
+  let exitFunction = function (_exit) {
+    _exit.style("color", "red").transition().duration(1000).remove();
+  };
+
+  let sel = d3.select("#queue").selectAll("div");
+
+  // sel.data(queue).join(
+  //   (enter) => enterFunction(enter),
+  //   (update) => updateFunction(update),
+  //   (exit) => exitFunction(exit)
+  // );
+
   $("input#submit").click(async function () {
     let strings = $("textarea#inputlist").val().split("\n");
     stoplist = new Set(
@@ -29,6 +52,7 @@ window.onload = function () {
     maxDepth = +$("input#degrees").val();
     console.log("max depth", maxDepth);
     console.log("stopwords", stoplist);
+
     //send to server and process response
     strings.forEach((line) => {
       let input = checkURL(line);
@@ -39,6 +63,7 @@ window.onload = function () {
     });
 
     while (queue.length > 0) {
+      // get first element
       let item = queue.shift();
       let source = nodes.filter((n) => n.title == item.title)[0];
       console.log(
@@ -92,13 +117,36 @@ window.onload = function () {
           // now that links and nodes has been added, add the commonlink to the queue
           queue.push(commonLink);
           console.log("added", commonLink.title, "to queue");
+          d3.select("#queue")
+            .selectAll("div")
+            .data(queue)
+            .join(
+              (enter) => enterFunction(enter),
+              (update) => updateFunction(update),
+              (exit) => exitFunction(exit)
+            );
         });
       } else {
-        console.log(item.title, "skipped");
+        //give feedbacks
+        if (item.depth > maxDepth) {
+          console.log("  skipped, depth is ", item.depth);
+        } else if (done.has(item.title)) {
+          console.log("  skipped, already done ", item.title);
+        } else if (stoplist.has(item.title)) {
+          console.log("  skipped, ", item.title, " in stoplist");
+        }
       }
       //add the item to the done array
-      done.add(item.title);
+
       console.log(queue.length, "items in queue");
+      d3.select("#results")
+        .selectAll("div")
+        .data(queue)
+        .join(
+          (enter) => enterFunction(enter),
+          (update) => updateFunction(update),
+          (exit) => exitFunction(exit)
+        );
     }
     // the queue is over, export results
     let edgesCSV = edges.map((d) => ({
@@ -149,7 +197,13 @@ function checkURL(_url) {
 async function getCommonLinks(_pagename, _language) {
   // get all the outlinks
   let links = await getLinksFromWikiText(_pagename, _language);
+
+  console.log("  found ", links.length, " links in the page");
+  console.log(links);
+  // if there are outlinks, then check backlins
   let backlinks = await getBackLinks(_pagename, _language);
+  console.log("  found ", backlinks.length, " backlinks in the page");
+  console.log(backlinks);
 
   let common = links.filter((value) => backlinks.includes(value));
   //return filterHubs && backlinks.length == maxBacklins ? [] : common;
@@ -204,6 +258,8 @@ async function getBackLinks(_title, _language) {
   let data = await response.json();
 
   let backlinks = data.query.backlinks;
+
+  console.log("  getting backlinks for " + _title);
 
   // if there are other pages, stat to loop
   let nextPage = true;
